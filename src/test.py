@@ -1,5 +1,5 @@
 from problem import PuzzleSolver
-from puzzleGenerator import puzzle_generator
+from puzzle_generator import puzzle_generator
 # basic test
 UP = 3
 DOWN = 1

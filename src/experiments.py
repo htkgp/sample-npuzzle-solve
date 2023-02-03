@@ -1,6 +1,6 @@
 import sys
 from problem import PuzzleSolver
-from puzzleGenerator import puzzle_generator
+from puzzle_generator import puzzle_generator
 import json
 from heuristic import misplaced_tiles, total_distance_goal
 import os

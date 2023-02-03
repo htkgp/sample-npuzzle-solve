@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        canvas {
+            border: 1px solid #d3d3d3;
+            background-color: #f1f1f1;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+
+</head>
+
+<body>
+    <script>
+        var puzzle = [[0 , 1 ,2 ,9], [3, 4, 5, 10], [6, 7 , 8, 11], [12, 13, 14, 15]]; //testing
+        var actions = [1 , 2, 1 ,2 , 2 ,1, 0, 3]; //testing
+        const MULTIPLIER = 80;
+        const DIRECTIONS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+        var myObstacles = {};
+        var canvas_height = 400;
+        var canvas_width = 400;
+        var current_action = -1;
+        $("h1").hide();
+        function getParameterByName(name, url = window.location.href) {
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+        var to_fill = getParameterByName("data");
+        if(to_fill !== null){
+            $("#data").val(to_fill);
+        }
+        function startSimulation() {
+            try{
+                var data = JSON.parse($("#data").val());
+                puzzle = data["puzzle"];
+                actions = data["actions"];
+                if(puzzle.length !== puzzle[0].length){
+                    throw Error(" ")
+                }
+                for(var i = 0 ; i < actions.length ; i++){
+                    if(actions[i] < 0 || actions[i] > 3){
+                        throw Error(" ")
+                    }
+                }
+                $("button").hide();
+                $("textarea").hide();
+                $("h1").hide();
+            }catch(err){
+                console.log(err);
+                $("h1").show();
+                return;
+            }
+            
+            
+            
+
+            canvas_height = 120*puzzle.length;
+            canvas_width = 120*puzzle.length;
+            // myScore = new component("30px", "Consolas", "black", 280, 40, "text");
+            for(var i = 0 ; i < puzzle.length; i++){
+
+                for (var j = 0; j < puzzle[i].length ; j++){
+                    var x = new component(MULTIPLIER, MULTIPLIER, "black", (j+1) * MULTIPLIER, (i+1)*MULTIPLIER, puzzle[i][j], [(j+1) * MULTIPLIER, (i+1)*MULTIPLIER]);
+                    myObstacles[puzzle[i][j]] = x;
+                }
+            }
+            myGameArea.start();
+        }
+
+        var myGameArea = {
+            canvas: document.createElement("canvas"),
+            start: function () {
+                this.canvas.width = canvas_width;
+                this.canvas.height = canvas_height;
+                this.context = this.canvas.getContext("2d");
+                document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+                this.frameNo = 0;
+                this.interval = setInterval(updateGameArea, 8);
+            },
+            clear: function () {
+                this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+        }
+
+        function component(width, height, color, x, y, text, next_loc) {
+            this.width = width;
+            this.height = height;
+            this.speedX = 0;
+            this.speedY = 0;
+            this.x = x;
+            this.y = y;
+            this.next_x = next_loc[0];
+            this.next_y = next_loc[1];
+            this.text = text
+            this.doing = false;
+            this.update = function () {
+                
+                ctx = myGameArea.context;
+                ctx.font = this.width + " " + this.height;
+                ctx.fillStyle = color;
+                ctx.fillText(this.text.toString(), this.x+5, this.y+5);
+                this.newPos();
+                // ctx.fillStyle = color;
+                // ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+            this.newPos = function () {
+                this.reachPosition();
+                this.x += this.speedX;
+                this.y += this.speedY ;
+
+                    
+                    
+
+                
+            }
+            this.reachPosition = function () {
+                if(this.next_x - this.x > 0){
+                    this.speedX = 1;
+                }else if(this.next_x - this.x < 0){
+                    this.speedX = -1;
+                }else{
+                    this.speedX = 0
+                }
+
+                if(this.next_y - this.y > 0){
+                    this.speedY = 1;
+                }else if(this.next_y - this.y < 0){
+                    this.speedY = -1;
+                }else{
+                    this.speedY = 0
+                }
+                if(this.next_x === this.x && this.next_y === this.y &&this.text === 0 && !this.doing){
+                    this.doing = true;
+                     current_action+= 1;
+                     if(current_action >= actions.length){
+                        return;
+                    }
+                     var next_action = DIRECTIONS[actions[current_action]];
+                     console.log("next:" , next_action)
+                     var current_loc_x = this.x;
+                     var current_loc_y = this.y;
+                     for (var i = 0; i < puzzle.length; i ++){
+                        for(var j = 0; j < puzzle[i].length; j ++){
+                            if(puzzle[i][j] === 0){
+                                var i_2 = i + next_action[0];
+                                var j_2 = j + next_action[1];
+                                var x2 = myObstacles[puzzle[i_2][j_2]].x;
+                                var y2 = myObstacles[puzzle[i_2][j_2]].y;
+                                console.log("swap:" , puzzle[i_2][j_2],puzzle[i][j] )
+                                
+                                myObstacles[puzzle[i][j]].next_x = x2 ;
+                                myObstacles[puzzle[i][j]].next_y = y2 ;
+                                myObstacles[puzzle[i_2][j_2]].next_x = current_loc_x ;
+                                myObstacles[puzzle[i_2][j_2]].next_y = current_loc_y ;
+                                puzzle[i][j] = puzzle[i_2][j_2]
+                                puzzle[i_2][j_2] = 0;
+                                console.log(puzzle);
+                                this.doing = false;
+                                return;
+                            }
+                        }
+                    }
+                }
+
+            }
+            
+        }
+
+        function updateGameArea() {
+            
+            myGameArea.clear();
+            myGameArea.frameNo += 1;
+           
+            if(current_action >= actions.length){
+                clearInterval(myGameArea.interval)
+            }
+
+            for (i = 0; i < Object.values( myObstacles).length; i += 1) {
+                // myObstacles[i].x += -1;
+                Object.values(myObstacles)[i].update();
+            }
+
+        }
+
+    </script>
+    <br>
+    <h1 hidden>
+        This is not valid, copy from terminal output please
+        </h1>
+    <textarea id="data" cols="40" rows="10"></textarea>
+    <button onmousedown="startSimulation()">START ANIMATION</button>
+    
+</body>
+
+</html>

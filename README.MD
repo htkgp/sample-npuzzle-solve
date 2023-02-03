@@ -1,4 +1,3 @@
-# CMPT 417 Final project
 
 ## to run the program:
 main entry of the application is experiments.py with arguments
